@@ -1,8 +1,10 @@
 package com.martillo.mealdeck.ui.home
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +21,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
@@ -31,10 +34,6 @@ import kotlin.math.roundToInt
 fun HomeScreen(state: HomeState, onChangeTargets:() -> Unit)
 {
 
-    val fraction = if (state.targetKcal <= 0.0) 0f else (state.kcal / state.targetKcal).toFloat()
-    val baseColor = if(fraction>1f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant
-    val progress = if(fraction>1f) (state.targetKcal/state.kcal).toFloat() else fraction
-    val arcColor = MaterialTheme.colorScheme.primary
 
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -47,39 +46,14 @@ fun HomeScreen(state: HomeState, onChangeTargets:() -> Unit)
                 title = { Text("Home Screen") }
             )
 
-            Box(modifier =Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
-                Canvas(Modifier.width(336.dp).height(168.dp).padding(10.dp)) {
-                    val strokeWidth = 48.dp.toPx()
-                    val stroke = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
-                    val arcSize = Size(336.dp.toPx() - strokeWidth, 336.dp.toPx() - strokeWidth)
-                    val arcTopLeft = Offset(strokeWidth / 2f, strokeWidth / 2f)
-                    drawArc(
-                        color = baseColor,
-                        startAngle = 180f,
-                        sweepAngle = 180f,
-                        useCenter = false,
-                        topLeft = arcTopLeft,
-                        size = arcSize,
-                        style = stroke,
-                    )
+            CaloryGauge(targetKcal = state.targetKcal, kcal = state.kcal)
 
-                    drawArc(
-                        color = arcColor,
-                        startAngle = 180f,
-                        sweepAngle = 180f * progress,
-                        useCenter = false,
-                        topLeft = arcTopLeft,
-                        size = arcSize,
-                        style = stroke,
-                    )
-
-                }
-                Text("${state.kcal.roundToInt()}/${state.targetKcal.roundToInt()}")
-            }
-
-
-
+            MacroBar("Protein", state.protein, state.targetProtein)
+            MacroBar("Carbs", state.carbs, state.targetCarbs)
+            MacroBar("Fat", state.fat, state.targetFat)
+            MacroBar("Sugar", state.sugar, state.targetSugar)
         }
+
         SmallFloatingActionButton(
             onClick = onChangeTargets,
             modifier = Modifier
@@ -87,6 +61,74 @@ fun HomeScreen(state: HomeState, onChangeTargets:() -> Unit)
                 .padding(16.dp),
         ) {
             Icon(Icons.Filled.Edit, contentDescription = "Edit")
+        }
+    }
+}
+@Composable
+fun CaloryGauge(kcal:Double,targetKcal:Double) {
+    val fraction = if (targetKcal <= 0.0) 0f else (kcal / targetKcal).toFloat()
+    val baseColor = if(fraction>1f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant
+    val progress = if(fraction>1f) (targetKcal/kcal).toFloat() else fraction
+    val arcColor = MaterialTheme.colorScheme.primary
+    Box(modifier =Modifier.fillMaxWidth().padding(vertical = 48.dp), contentAlignment = Alignment.BottomCenter) {
+        Canvas(Modifier.width(336.dp).height(168.dp).padding(10.dp)) {
+            val strokeWidth = 48.dp.toPx()
+            val stroke = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+            val arcSize = Size(336.dp.toPx() - strokeWidth, 336.dp.toPx() - strokeWidth)
+            val arcTopLeft = Offset(strokeWidth / 2f, strokeWidth / 2f)
+            drawArc(
+                color = baseColor,
+                startAngle = 180f,
+                sweepAngle = 180f,
+                useCenter = false,
+                topLeft = arcTopLeft,
+                size = arcSize,
+                style = stroke,
+            )
+            drawArc(
+                color = arcColor,
+                startAngle = 180f,
+                sweepAngle = 180f * progress,
+                useCenter = false,
+                topLeft = arcTopLeft,
+                size = arcSize,
+                style = stroke,
+            )
+
+        }
+        Text("${kcal.roundToInt()}/${targetKcal.roundToInt()}")
+    }
+}
+@Composable
+fun MacroBar(
+    label: String,
+    eaten: Double,
+    target: Double,
+    modifier: Modifier = Modifier,
+){
+    val fraction = if (target <= 0.0) 0f else (eaten / target).toFloat()
+    val baseColor = if(fraction>1f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant
+    val progress = if(fraction>1f) (target/eaten).toFloat() else fraction
+    val fill = MaterialTheme.colorScheme.primary
+    Column(modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label)
+            Text("${eaten.roundToInt()} / ${target.roundToInt()} g")
+        }
+        Canvas(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp)
+                .height(10.dp)
+        ) {
+            val radius = size.height / 2f
+            val corners = CornerRadius(radius, radius)
+            drawRoundRect(color = baseColor, cornerRadius = corners)
+            drawRoundRect(
+                color = fill,
+                size = Size(size.width * progress, size.height),
+                cornerRadius = corners,
+            )
         }
     }
 }
